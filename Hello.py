@@ -2,6 +2,9 @@
 title = "Placeholder Title"
 explanation = "This is a placeholder text that explains the contents of the page."
 
-# Print the title and explanation
-print(title)
-print(explanation)
+# Create a text file and write the title and explanation to it
+with open("page.txt", "w") as file:
+    file.write(title + "\n")
+    file.write(explanation)
+
+print("Page content has been saved to 'page.txt'.")
