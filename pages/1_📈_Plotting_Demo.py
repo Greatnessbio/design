@@ -1,56 +1,54 @@
-# Copyright 2018-2022 Streamlit Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-import inspect
-import textwrap
-import time
-import numpy as np
-from utils import show_code
+from PIL import Image
+import cairosvg
+import io
 
+def convert_to_svg(input_image):
+    # Convert PIL Image to PNG bytes
+    with io.BytesIO() as output_bytes:
+        input_image.save(output_bytes, format='PNG')
+        png_data = output_bytes.getvalue()
 
-def plotting_demo():
-    progress_bar = st.sidebar.progress(0)
-    status_text = st.sidebar.empty()
-    last_rows = np.random.randn(1, 1)
-    chart = st.line_chart(last_rows)
+    # Convert PNG bytes to SVG
+    svg_data = cairosvg.png2svg(png_data)
+    return svg_data
 
-    for i in range(1, 101):
-        new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-        status_text.text("%i%% Complete" % i)
-        chart.add_rows(new_rows)
-        progress_bar.progress(i)
-        last_rows = new_rows
-        time.sleep(0.05)
+def save_image(image, format):
+    with io.BytesIO() as output_bytes:
+        image.save(output_bytes, format=format)
+        return output_bytes.getvalue()
 
-    progress_bar.empty()
+def main():
+    st.title("Image File Converter")
 
-    # Streamlit widgets automatically run the script from top to bottom. Since
-    # this button is not connected to any other logic, it just causes a plain
-    # rerun.
-    st.button("Re-run")
+    # Upload file
+    uploaded_file = st.file_uploader("Choose an image file", type=['png', 'jpg', 'jpeg', 'gif', 'bmp'])
 
+    if uploaded_file is not None:
+        # Display the uploaded image
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Image', use_column_width=True)
 
-st.set_page_config(page_title="Plotting Demo", page_icon="📈")
-st.markdown("# Plotting Demo")
-st.sidebar.header("Plotting Demo")
-st.write(
-    """This demo illustrates a combination of plotting and animation with
-Streamlit. We're generating a bunch of random numbers in a loop for around
-5 seconds. Enjoy!"""
-)
+        # Choose output format
+        format_options = ['SVG', 'PNG', 'JPG', 'GIF', 'BMP']
+        output_format = st.selectbox("Select Output Format", format_options)
 
-plotting_demo()
+        if st.button("Convert"):
+            if output_format == 'SVG':
+                converted_data = convert_to_svg(image)
+                file_ext = 'svg'
+            else:
+                converted_data = save_image(image, output_format)
+                file_ext = output_format.lower()
 
-show_code(plotting_demo)
+            # Create a download link
+            download_filename = f"converted_image.{file_ext}"
+            st.download_button(
+                label="Download Image",
+                data=converted_data,
+                file_name=download_filename,
+                mime=f"image/{file_ext}"
+            )
+
+if __name__ == "__main__":
+    main()
