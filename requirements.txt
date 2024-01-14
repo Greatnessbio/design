@@ -6,3 +6,4 @@ streamlit==1.9.0
 ffmpeg-python
 Pillow
 cairosvg
+llama_hub
